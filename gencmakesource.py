@@ -89,7 +89,7 @@ recursiveeach = args.recursive_each
 force = args.force
 dryrun = args.dryrun
 
-def createCmakeLists(path, extensions, recursive, target, length, force, dryrun):
+def createCmakeLists(path, extensions, recursive, target, includedSubdirs, length, force, dryrun):
     files = findFiles(path, extensions, recursive)
 
     if not files:
@@ -101,6 +101,12 @@ def createCmakeLists(path, extensions, recursive, target, length, force, dryrun)
     cmakelistsContent = f"target_sources({target} PRIVATE\n"
     cmakelistsContent += "\t" + "\n\t".join(filesTxt)
     cmakelistsContent += "\n)"
+
+    if includedSubdirs:
+        cmakelistsContent += "\n"
+        for subdir in includedSubdirs:
+            if findFiles(os.path.join(path, subdir), extensions, recursive):
+                cmakelistsContent += f"add_subdirectory(\"{subdir}\")\n"
 
     if dryrun:
         print("===== Dry run =====")
@@ -123,8 +129,8 @@ def createCmakeLists(path, extensions, recursive, target, length, force, dryrun)
         f.write(cmakelistsContent)
 
 def createCmakeListsRecursive(path, extensions, target, length, force, dryrun):
-    createCmakeLists(path, extensions, False, target, length, force, dryrun)
-    dirs = (dir for dir in os.listdir(path) if os.path.isdir(os.path.join(path, dir)))
+    dirs = list(dir for dir in os.listdir(path) if os.path.isdir(os.path.join(path, dir)))
+    createCmakeLists(path, extensions, False, target, dirs, length, force, dryrun)
     for dir in dirs:
         p = os.path.join(path, dir)
         createCmakeListsRecursive(p, extensions, target, length, force, dryrun)
@@ -132,4 +138,4 @@ def createCmakeListsRecursive(path, extensions, target, length, force, dryrun):
 if recursiveeach:
     createCmakeListsRecursive(path, extensions, target, length, force, dryrun)
 else:
-    createCmakeLists(path, extensions, recursive, target, length, force, dryrun)
+    createCmakeLists(path, extensions, recursive, target, None, length, force, dryrun)
